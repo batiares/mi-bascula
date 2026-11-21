@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi Báscula Diaria</title>
+<meta name="theme-color" content="#ff5a36">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: app de una columna con barra inferior; tarjetas "héroe" con degradado para comida (coral) y movimiento (turquesa) */
+:root {
+  --bg: #eef1f7; --card: #ffffff; --fg: #121826; --muted: #667085; --line: #dde2ec;
+  --accent: #ff5a36; --accent2: #ffb020; --move: #0fae9e; --move2: #3b82f6; --bad: #e5484d; --ok: #16a34a;
+  --shadow: 0 6px 24px rgba(18, 24, 38, .08);
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --bg: #0b1019; --card: #151c2a; --fg: #eef2f8; --muted: #93a0b5; --line: #263045; --bad: #ff6b6f; --ok: #4ade80;
+  --shadow: 0 6px 24px rgba(0, 0, 0, .35); color-scheme: dark } }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.heroStats span, .heroStats b { white-space: nowrap; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--body); -webkit-tap-highlight-color: transparent;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 96px) max(16px, env(safe-area-inset-left, 0px)); }
+.wrap { max-width: 560px; margin: 0 auto; display: grid; gap: 16px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
+h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; }
+h2 { font-size: 1.12rem; font-weight: 600; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.sub { color: var(--muted); margin: 0; font-size: .88rem; text-transform: capitalize; }
+section { display: grid; gap: 16px; }
+.card { background: var(--card); border-radius: 20px; padding: 18px; display: grid; gap: 12px; box-shadow: var(--shadow); min-width: 0; }
+
+/* héroes */
+.hero { color: #fff; border-radius: 24px; padding: 20px; display: grid; gap: 14px; box-shadow: 0 12px 30px rgba(255, 90, 54, .35);
+  background: radial-gradient(120% 120% at 100% 0%, var(--accent2) 0%, var(--accent) 55%, #e2335a 100%); }
+.hero.move { background: radial-gradient(120% 120% at 100% 0%, var(--move2) 0%, var(--move) 60%, #0b7f74 100%); box-shadow: 0 12px 30px rgba(15, 174, 158, .35); }
+.hero .lbl { font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; opacity: .85; font-weight: 600; }
+.ringrow { display: flex; align-items: center; gap: 18px; }
+.ring { width: 132px; height: 132px; flex: none; position: relative; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 12; }
+.ring .bg { stroke: rgba(255, 255, 255, .25); }
+.ring .fg { stroke: #fff; stroke-linecap: round; transition: stroke-dashoffset .6s cubic-bezier(.2, .8, .2, 1); }
+.ring .mid { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.ring .mid b { font-family: var(--display); font-size: 1.9rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.ring .mid span { font-size: .72rem; opacity: .9; }
+.heroStats { display: grid; gap: 8px; flex: 1; min-width: 0; }
+.heroStats div { display: flex; justify-content: space-between; gap: 8px; font-variant-numeric: tabular-nums; }
+.heroStats b { font-weight: 700; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { background: rgba(255, 255, 255, .2); border-radius: 99px; padding: 5px 11px; font-size: .8rem; font-weight: 600; }
+
+/* formularios */
+label { display: grid; gap: 4px; font-size: .8rem; color: var(--muted); font-weight: 600; }
+input, select { font: inherit; color: var(--fg); background: var(--bg); border: 1.5px solid var(--line); border-radius: 12px; padding: 11px 12px; width: 100%; }
+input:focus, select:focus { border-color: var(--accent); outline: none; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; align-items: end; }
+.btn { font: 700 .95rem var(--body); border-radius: 14px; padding: 13px 18px; cursor: pointer; border: 0; background: var(--bg); color: var(--fg); display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
+.btn.primary { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #fff; box-shadow: 0 6px 16px rgba(255, 90, 54, .35); }
+.btn.go { background: linear-gradient(135deg, var(--move2), var(--move)); color: #fff; box-shadow: 0 6px 16px rgba(15, 174, 158, .35); }
+.btn.ghost { background: transparent; border: 1.5px solid var(--line); }
+.btn.white { background: #fff; color: #0b7f74; }
+.btn.danger { background: var(--bad); color: #fff; }
+.btn:active { transform: scale(.97); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.msg { font-size: .86rem; color: var(--muted); margin: 0; }
+.msg.err { color: var(--bad); }
+
+/* listas */
+.items { list-style: none; margin: 0; padding: 0; display: grid; }
+.items li { display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.items li:last-child { border-bottom: 0; }
+.dot { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; font-size: 1.05rem; background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.dot.m { background: color-mix(in srgb, var(--move) 16%, transparent); }
+.items small { color: var(--muted); display: block; font-size: .76rem; }
+.k { font-variant-numeric: tabular-nums; font-weight: 700; }
+.x { border: 0; background: none; color: var(--muted); font-size: 1rem; cursor: pointer; padding: 6px; }
+.empty { color: var(--muted); font-size: .9rem; padding: 6px 0; display: block !important; }
+
+/* recorrido */
+.big { font-family: var(--display); font-size: 3.4rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.runStats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.runStats div { background: rgba(255, 255, 255, .16); border-radius: 14px; padding: 10px; display: grid; }
+.runStats span { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; opacity: .85; }
+.runStats b { font-family: var(--display); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.controls { display: flex; gap: 10px; flex-wrap: wrap; }
+.controls .btn { flex: 1; min-width: 120px; }
+canvas.route { width: 100%; height: 220px; border-radius: 16px; background: var(--bg); display: block; }
+.gps { font-size: .78rem; display: flex; align-items: center; gap: 6px; }
+.gps i { width: 8px; height: 8px; border-radius: 50%; background: #fff; opacity: .5; }
+.gps.live i { opacity: 1; animation: pulse 1.2s infinite; }
+@keyframes pulse { 50% { transform: scale(1.6); opacity: .4; } }
+
+/* historial */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--bg); border-radius: 14px; padding: 12px; display: grid; gap: 2px; }
+.stat span { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+.stat b { font-family: var(--display); font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+svg.spark { width: 100%; height: 90px; display: block; }
+.pill { display: inline-block; font-size: .75rem; font-weight: 700; padding: 3px 10px; border-radius: 99px; color: #fff; }
+
+/* barra inferior */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(4, 1fr);
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 6px) max(8px, env(safe-area-inset-left, 0px)); }
+.tabbar button { border: 0; background: none; color: var(--muted); font: 600 .72rem var(--body); display: grid; justify-items: center; gap: 3px; padding: 6px 0; cursor: pointer; border-radius: 12px; }
+.tabbar svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tabbar button[aria-selected="true"] { color: var(--accent); }
+.tabbar button[aria-selected="true"][data-tab="correr"] { color: var(--move); }
+@media (max-width: 370px) { .grid2, .runStats, .stats { grid-template-columns: 1fr 1fr; } .ring { width: 110px; height: 110px; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div><h1>Mi Báscula</h1><p class="sub" id="today"></p></div>
+    <button class="btn ghost" id="install" hidden>Instalar app</button>
+  </header>
+
+  <!-- HOY -->
+  <section id="tab-hoy">
+    <div class="hero">
+      <span class="lbl">Calorías de hoy</span>
+      <div class="ringrow">
+        <div class="ring"><svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="52"/><circle class="fg" id="ring" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="326.7"/></svg>
+          <div class="mid"><b id="eaten">0</b><span>kcal comidas</span></div></div>
+        <div class="heroStats">
+          <div><span>Meta</span><b id="target">—</b></div>
+          <div><span>Quemadas</span><b id="burned">0</b></div>
+          <div><span id="leftLbl">Te quedan</span><b id="left">—</b></div>
+        </div>
+      </div>
+      <div class="chips" id="moveChips"></div>
+    </div>
+
+    <div class="card">
+      <h2>¿Qué comiste?</h2>
+      <div class="grid3">
+        <label for="fName">Alimento<input id="fName" list="foods" placeholder="Busca: tacos, Sabritas…" autocomplete="off"></label>
+        <label for="fQty">Cuántos<input id="fQty" type="number" min="0.25" step="0.25" value="1" inputmode="decimal"></label>
+        <label for="fKcal">kcal c/u<input id="fKcal" type="number" min="0" inputmode="numeric"></label>
+      </div>
+      <datalist id="foods"></datalist>
+      <button class="btn primary" id="fAdd">Agregar</button>
+      <p class="msg" id="foodMsg">Elige de la lista o escribe cualquier cosa con sus calorías. Funciona sin internet.</p>
+      <a class="btn ghost" id="claudeLink" target="_blank" rel="noopener">📷 Calcular con foto en Claude</a>
+      <p class="msg">Necesita internet. Te da las calorías del plato; luego anótalas aquí.</p>
+    </div>
+
+    <div class="card">
+      <h2>Lo de hoy</h2>
+      <ul class="items" id="items"></ul>
+    </div>
+  </section>
+
+  <!-- CORRER -->
+  <section id="tab-correr" hidden>
+    <div class="hero move">
+      <div class="top"><span class="lbl">Recorrido</span><span class="gps" id="gps"><i></i><span id="gpsTxt">GPS apagado</span></span></div>
+      <div><div class="big" id="rDist">0.00</div><span>kilómetros</span></div>
+      <div class="runStats">
+        <div><span>Tiempo</span><b id="rTime">0:00</b></div>
+        <div><span>Ritmo</span><b id="rPace">–</b></div>
+        <div><span>Pasos</span><b id="rSteps">0</b></div>
+      </div>
+      <div class="chips"><span class="chip" id="rKcal">0 kcal</span><span class="chip" id="rSpeed">0 km/h</span></div>
+      <div class="controls" id="controls"></div>
+    </div>
+    <div class="card">
+      <canvas class="route" id="liveMap" width="600" height="440" aria-label="Dibujo de tu recorrido"></canvas>
+      <p class="msg">El GPS no gasta datos: funciona sin internet. Mientras grabas, la pantalla se queda encendida; si la apagas o cambias de app, Android puede pausar el GPS. Los pasos se estiman con la distancia y tu altura.</p>
+    </div>
+  </section>
+
+  <!-- HISTORIAL -->
+  <section id="tab-historial" hidden>
+    <div class="card">
+      <h2>Esta semana</h2>
+      <div class="stats">
+        <div class="stat"><span>Kilómetros</span><b id="wKm">0</b></div>
+        <div class="stat"><span>Quemadas</span><b id="wKcal">0</b></div>
+        <div class="stat"><span>Salidas</span><b id="wRuns">0</b></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Tu peso</h2>
+      <svg class="spark" id="spark" viewBox="0 0 300 90" preserveAspectRatio="none" aria-label="Gráfica de peso"></svg>
+      <p class="msg" id="weightTxt">Guarda tu peso en Perfil cada semana para ver tu avance.</p>
+    </div>
+    <div class="card">
+      <h2>Recorridos</h2>
+      <canvas class="route" id="histMap" width="600" height="440" hidden aria-label="Dibujo del recorrido elegido"></canvas>
+      <ul class="items" id="runs"></ul>
+    </div>
+  </section>
+
+  <!-- PERFIL -->
+  <section id="tab-perfil" hidden>
+    <div class="card">
+      <h2>Tus datos</h2>
+      <div class="grid2">
+        <label for="weight">Peso (kg)<input id="weight" type="number" step="0.1" inputmode="decimal"></label>
+        <label for="height">Altura (cm)<input id="height" type="number" inputmode="numeric"></label>
+        <label for="age">Edad<input id="age" type="number" inputmode="numeric"></label>
+        <label for="sex">Sexo<select id="sex"><option value="m">Hombre</option><option value="f">Mujer</option></select></label>
+        <label for="act">Actividad<select id="act">
+          <option value="1.2">Casi nada (oficina)</option><option value="1.375">Ligera (1–3 días)</option>
+          <option value="1.55">Moderada (3–5 días)</option><option value="1.725">Alta (6–7 días)</option></select></label>
+        <label for="goal">Objetivo<select id="goal"><option value="-500">Bajar de peso</option><option value="0">Mantenerme</option><option value="300">Subir músculo</option></select></label>
+      </div>
+      <button class="btn primary" id="saveProfile">Guardar</button>
+      <p class="msg" id="profileMsg"></p>
+    </div>
+    <div class="card" id="results" hidden>
+      <h2>Tus números</h2>
+      <div class="stats">
+        <div class="stat"><span>IMC</span><b id="bmi">—</b></div>
+        <div class="stat"><span>Gasto/día</span><b id="tdee">—</b></div>
+        <div class="stat"><span>Tu meta</span><b id="goalK">—</b></div>
+      </div>
+      <p class="msg" id="bmiCat"></p>
+      <p class="msg">Estimaciones con la fórmula Mifflin‑St Jeor. Para algo médico, consulta a un profesional.</p>
+    </div>
+    <div class="card">
+      <h2>Ejercicio recomendado</h2>
+      <p class="msg">OMS, adultos: 150–300 min a la semana de cardio moderado (caminar rápido, bici) y 2 días o más de fuerza (sentadillas, lagartijas, plancha).</p>
+      <a class="btn go" id="claudeLink2" target="_blank" rel="noopener">Armar mi rutina en Claude</a>
+    </div>
+  </section>
+</div>
+
+<nav class="tabbar" role="tablist">
+  <button role="tab" data-tab="hoy" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M12 3c3 3 6 6 6 10a6 6 0 0 1-12 0c0-2 1-4 3-5 0 2 1 3 2 3 0-3-1-5 1-8z"/></svg>Hoy</button>
+  <button role="tab" data-tab="correr" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="14" cy="4" r="2"/><path d="M6 21l3-6 3 2v4M9 15l2-6 4 3 3 1M11 9l-4 1-2 3"/></svg>Recorrido</button>
+  <button role="tab" data-tab="historial" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Avance</button>
+  <button role="tab" data-tab="perfil" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Perfil</button>
+</nav>
+
+<script>
+const CLAUDE_URL = "https://claude.ai/artifact/PRTjWhB2YTcBqJw6rfMXeK";
+// kcal por porción típica (aprox.)
+const FOODS = [["Tortilla de maíz", 52], ["Taco de pastor", 150], ["Taco de bistec", 140], ["Quesadilla", 220], ["Torta de jamón", 450],
+  ["Tamal", 280], ["Huevo estrellado", 90], ["Frijoles refritos (½ taza)", 120], ["Arroz rojo (½ taza)", 120], ["Pechuga asada (120 g)", 200],
+  ["Bistec de res (120 g)", 250], ["Sabritas originales (45 g)", 240], ["Doritos Nacho (62 g)", 310], ["Galleta María", 30], ["Gansito", 180],
+  ["Concha (pan dulce)", 320], ["Coca-Cola 600 ml", 252], ["Refresco light 600 ml", 2], ["Café con leche y azúcar", 110], ["Plátano", 105],
+  ["Manzana", 95], ["Leche entera (vaso)", 150], ["Cerveza (lata)", 150], ["Pizza (rebanada)", 285], ["Hamburguesa sencilla", 350],
+  ["Sopa instantánea", 300], ["Sándwich de jamón", 300], ["Avena con leche (taza)", 250]];
+
+// ---------- cálculos ----------
+function calc(p) {
+  const w = +p.weight, h = +p.height, a = +p.age;
+  if (!w || !h || !a) return null;
+  const bmr = 10 * w + 6.25 * h - 5 * a + (p.sex === "f" ? -161 : 5);
+  const tdee = Math.round(bmr * (+p.act || 1.2));
+  const target = Math.max(p.sex === "f" ? 1200 : 1500, tdee + (+p.goal || 0)); // mínimo seguro
+  const bmi = w / (h / 100) ** 2;
+  const cat = bmi < 18.5 ? ["Bajo peso", "--accent2"] : bmi < 25 ? ["Peso saludable", "--ok"] : bmi < 30 ? ["Sobrepeso", "--accent2"] : ["Obesidad", "--bad"];
+  return { tdee, target, bmi: Math.round(bmi * 10) / 10, cat };
+}
+function hav(a, b) { // metros entre [lat,lon]
+  const R = 6371000, r = Math.PI / 180, dLa = (b[0] - a[0]) * r, dLo = (b[1] - a[1]) * r;
+  const x = Math.sin(dLa / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLo / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+function burn(distM, ms, kg) { // MET según velocidad
+  const h = ms / 3.6e6; if (!h) return 0;
+  const kmh = distM / 1000 / h, met = kmh < 3 ? 2.5 : kmh < 5.5 ? 3.5 : kmh < 7 ? 5 : kmh < 9 ? 8.3 : kmh < 11 ? 9.8 : 11.5;
+  return Math.round(met * kg * h);
+}
+console.assert(calc({ weight: 80, height: 175, age: 30, sex: "m", act: 1.2, goal: 0 }).tdee === 2099, "calc");
+console.assert(Math.abs(hav([19.4326, -99.1332], [19.4426, -99.1332]) - 1112) < 5, "hav");
+console.assert(burn(5000, 3.6e6, 70) === 245, "burn");
+
+// ---------- guardado local (funciona sin internet) ----------
+// shortcut: localStorage (~5 MB, ~200 recorridos largos); pasar a IndexedDB si se llena
+const get = (k, d) => { try { return JSON.parse(localStorage.getItem("mbd-" + k)) ?? d; } catch { return d; } };
+const put = (k, v) => { try { localStorage.setItem("mbd-" + k, JSON.stringify(v)); return true; } catch { toast("No hay espacio para guardar. Borra recorridos viejos."); return false; } };
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString("es-MX");
+const dkey = (d = new Date()) => d.toLocaleDateString("sv");
+const toast = t => { $("foodMsg").textContent = t; };
+let profile = get("profile", {});
+const kg = () => +profile.weight || 70;
+
+// ---------- HOY ----------
+function today() { return get("d-" + dkey(), { items: [] }); }
+function renderDay() {
+  const d = today(), r = calc(profile);
+  const eaten = d.items.reduce((s, i) => s + i.kcal, 0);
+  const runsToday = get("runs", []).filter(x => dkey(new Date(x.start)) === dkey());
+  const burned = runsToday.reduce((s, x) => s + x.kcal, 0);
+  $("eaten").textContent = fmt(eaten); $("burned").textContent = fmt(burned) + " kcal";
+  $("target").textContent = r ? fmt(r.target) + " kcal" : "Llena Perfil";
+  const left = r ? r.target + burned - eaten : null;
+  $("leftLbl").textContent = left != null && left < 0 ? "Te pasaste" : "Te quedan";
+  $("left").textContent = left == null ? "—" : fmt(Math.abs(left)) + " kcal";
+  const pct = r ? Math.min(1, eaten / (r.target + burned)) : 0;
+  $("ring").style.strokeDashoffset = 326.7 * (1 - pct);
+  const km = runsToday.reduce((s, x) => s + x.dist, 0) / 1000;
+  $("moveChips").innerHTML = `<span class="chip">🚶 ${km.toFixed(2)} km hoy</span><span class="chip">👣 ${fmt(runsToday.reduce((s, x) => s + x.steps, 0))} pasos</span>`;
+  const ul = $("items"); ul.replaceChildren();
+  if (!d.items.length) { ul.innerHTML = '<li class="empty">Aún no anotas nada hoy. Agrega tu primera comida arriba.</li>'; return; }
+  d.items.forEach((it, idx) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="dot">🍽️</span><div></div><span class="k"></span><button class="x" aria-label="Quitar">✕</button>`;
+    li.children[1].textContent = it.name; const s = document.createElement("small"); s.textContent = it.time; li.children[1].append(s);
+    li.children[2].textContent = fmt(it.kcal) + " kcal";
+    li.children[3].onclick = () => { d.items.splice(idx, 1); put("d-" + dkey(), d); renderDay(); };
+    ul.append(li);
+  });
+}
+$("foods").innerHTML = FOODS.map(f => `<option value="${f[0]}">${f[1]} kcal</option>`).join("");
+$("fName").oninput = () => { const f = FOODS.find(x => x[0] === $("fName").value); if (f) $("fKcal").value = f[1]; };
+$("fAdd").onclick = () => {
+  const name = $("fName").value.trim(), qty = +$("fQty").value || 1, kcal = +$("fKcal").value;
+  if (!name || $("fKcal").value === "" || kcal < 0) { toast("Pon el alimento y sus calorías."); return; }
+  const d = today();
+  d.items.push({ name: qty !== 1 ? `${name} ×${qty}` : name, kcal: Math.round(kcal * qty), time: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }) });
+  if (put("d-" + dkey(), d)) { $("fName").value = ""; $("fKcal").value = ""; $("fQty").value = 1; toast("Agregado."); renderDay(); }
+};
+$("claudeLink").href = $("claudeLink2").href = CLAUDE_URL;
+
+// ---------- RECORRIDO ----------
+let run = get("current", null), watchId = null, wake = null, tick = null, lastSave = 0, skip = false, lastT = 0;
+const activeMs = () => run ? run.ms + (run.paused ? 0 : Date.now() - run.seg) : 0;
+const steps = m => Math.round(m / ((+profile.height || 170) * 0.00415)); // zancada ≈ 41.5% de la altura
+function hms(ms) { const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(s % 60).padStart(2, "0"); }
+
+function drawRoute(cv, pts, live) {
+  const ctx = cv.getContext("2d"), W = cv.width, H = cv.height, css = getComputedStyle(document.body);
+  ctx.clearRect(0, 0, W, H);
+  const real = pts.filter(Boolean);
+  if (real.length < 2) { ctx.fillStyle = css.getPropertyValue("--muted"); ctx.font = "600 26px Inter, sans-serif"; ctx.textAlign = "center";
+    ctx.fillText(live ? "Tu ruta aparecerá aquí" : "Sin ruta", W / 2, H / 2); return; }
+  const la = real.map(p => p[0]), lo = real.map(p => p[1]), k = Math.cos(la[0] * Math.PI / 180);
+  const minA = Math.min(...la), maxA = Math.max(...la), minO = Math.min(...lo), maxO = Math.max(...lo);
+  const sc = Math.min((W - 60) / Math.max((maxO - minO) * k, 1e-6), (H - 60) / Math.max(maxA - minA, 1e-6));
+  const X = p => W / 2 + ((p[1] - (minO + maxO) / 2) * k) * sc, Y = p => H / 2 - (p[0] - (minA + maxA) / 2) * sc;
+  const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#3b82f6"); g.addColorStop(1, "#0fae9e");
+  ctx.strokeStyle = g; ctx.lineWidth = 8; ctx.lineCap = ctx.lineJoin = "round"; ctx.beginPath();
+  let pen = false; for (const p of pts) { if (!p) { pen = false; continue; } pen ? ctx.lineTo(X(p), Y(p)) : ctx.moveTo(X(p), Y(p)); pen = true; }
+  ctx.stroke();
+  const dot = (p, c) => { ctx.beginPath(); ctx.arc(X(p), Y(p), 11, 0, 7); ctx.fillStyle = c; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = "#fff"; ctx.stroke(); };
+  dot(real[0], "#16a34a"); dot(real.at(-1), live ? "#3b82f6" : "#e5484d");
+}
+function renderRun() {
+  const ms = activeMs(), dist = run?.dist || 0, km = dist / 1000;
+  $("rDist").textContent = km.toFixed(2); $("rTime").textContent = hms(ms);
+  $("rPace").textContent = km > 0.05 ? hms(ms / km).replace(/^(\d+:\d+).*/, "$1") : "–";
+  $("rSteps").textContent = fmt(steps(dist)); $("rKcal").textContent = fmt(burn(dist, ms, kg())) + " kcal";
+  $("rSpeed").textContent = (ms ? km / (ms / 3.6e6) : 0).toFixed(1) + " km/h";
+  const c = $("controls");
+  c.innerHTML = !run ? '<button class="btn white" id="bStart">▶ Empezar</button>'
+    : run.paused ? '<button class="btn white" id="bResume">▶ Seguir</button><button class="btn danger" id="bStop">■ Terminar</button>'
+    : '<button class="btn white" id="bPause">❚❚ Pausa</button><button class="btn danger" id="bStop">■ Terminar</button>';
+  $("bStart") && ($("bStart").onclick = start); $("bResume") && ($("bResume").onclick = resume);
+  $("bPause") && ($("bPause").onclick = pause); $("bStop") && ($("bStop").onclick = stop);
+  drawRoute($("liveMap"), run?.pts || [], true);
+}
+function gpsTxt(t, live) { $("gpsTxt").textContent = t; $("gps").classList.toggle("live", !!live); }
+function onPos(p) {
+  if (!run || run.paused) return;
+  const { latitude, longitude, accuracy } = p.coords;
+  gpsTxt(`GPS ±${Math.round(accuracy)} m`, true);
+  if (accuracy > 35) return; // señal mala: ignorar
+  const pt = [+latitude.toFixed(5), +longitude.toFixed(5)], last = run.pts.findLast(Boolean);
+  if (last && !skip) {
+    const d = hav(last, pt), dt = (p.timestamp - lastT) / 1000;
+    if (d < 4) return;                    // ruido del GPS parado
+    if (dt > 0 && d / dt > 12) return;    // salto imposible (>43 km/h)
+    run.dist += d;
+  }
+  if (skip && run.pts.length) run.pts.push(null); // corte tras pausa: no sumar el hueco
+  skip = false; run.pts.push(pt); lastT = p.timestamp;
+  if (Date.now() - lastSave > 15000) { lastSave = run.savedAt = Date.now(); put("current", run); }
+}
+function onErr(e) { gpsTxt(e.code === 1 ? "Sin permiso de ubicación: actívalo en Ajustes" : "Buscando señal…", false); }
+async function keepAwake() { try { wake = await navigator.wakeLock?.request("screen"); } catch {} }
+function watch() {
+  if (!("geolocation" in navigator)) { gpsTxt("Este navegador no tiene GPS"); return; }
+  watchId = navigator.geolocation.watchPosition(onPos, onErr, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+  keepAwake(); clearInterval(tick); tick = setInterval(renderRun, 1000); gpsTxt("Buscando señal…");
+}
+function unwatch() { if (watchId != null) navigator.geolocation.clearWatch(watchId); watchId = null; clearInterval(tick); wake?.release?.(); wake = null; }
+function start() { run = { start: Date.now(), seg: Date.now(), ms: 0, dist: 0, pts: [], paused: false }; skip = false; put("current", run); watch(); renderRun(); }
+function pause() { run.ms = activeMs(); run.paused = true; put("current", run); unwatch(); gpsTxt("En pausa"); renderRun(); }
+function resume() { run.paused = false; run.seg = Date.now(); skip = true; put("current", run); watch(); renderRun(); }
+function stop() {
+  if (!run.paused) run.ms = activeMs();
+  unwatch(); gpsTxt("GPS apagado");
+  if (run.dist > 20) {
+    const runs = get("runs", []);
+    runs.unshift({ start: run.start, ms: run.ms, dist: Math.round(run.dist), steps: steps(run.dist), kcal: burn(run.dist, run.ms, kg()), pts: run.pts });
+    put("runs", runs);
+  }
+  run = null; localStorage.removeItem("mbd-current"); renderRun(); renderDay(); renderHist();
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && watchId != null) keepAwake(); });
+if (run && !run.paused) { run.ms += Math.max(0, (run.savedAt || run.seg) - run.seg); run.paused = true; } // se cerró grabando: queda en pausa
+
+// ---------- AVANCE ----------
+function renderHist() {
+  const runs = get("runs", []), weekAgo = Date.now() - 7 * 864e5, wk = runs.filter(r => r.start > weekAgo);
+  $("wKm").textContent = (wk.reduce((s, r) => s + r.dist, 0) / 1000).toFixed(1);
+  $("wKcal").textContent = fmt(wk.reduce((s, r) => s + r.kcal, 0)); $("wRuns").textContent = wk.length;
+  const ws = get("weights", []);
+  $("spark").hidden = ws.length < 2;
+  if (ws.length >= 2) {
+    const v = ws.map(w => w[1]), mn = Math.min(...v) - 1, mx = Math.max(...v) + 1;
+    const P = v.map((x, i) => `${(i / (v.length - 1)) * 290 + 5},${85 - (x - mn) / (mx - mn) * 75}`);
+    $("spark").innerHTML = `<polyline points="5,88 ${P.join(" ")} 295,88" style="fill:color-mix(in srgb, var(--accent) 18%, transparent);stroke:none"/><polyline points="${P.join(" ")}" style="fill:none;stroke:var(--accent)" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>`;
+    const diff = v.at(-1) - v[0];
+    $("weightTxt").textContent = `${v[0]} → ${v.at(-1)} kg (${diff > 0 ? "+" : ""}${diff.toFixed(1)} kg desde ${ws[0][0]})`;
+  } else { $("spark").innerHTML = ""; $("weightTxt").textContent = ws.length ? `Primer registro: ${ws[0][1]} kg. Guarda tu peso otra vez en unos días para ver tu avance.` : "Guarda tu peso en Perfil cada semana para ver tu avance."; }
+  const ul = $("runs"); ul.replaceChildren();
+  if (!runs.length) { ul.innerHTML = '<li class="empty">Todavía no hay recorridos. Ve a Recorrido y dale Empezar.</li>'; return; }
+  runs.forEach((r, i) => {
+    const li = document.createElement("li"), dt = new Date(r.start);
+    li.innerHTML = `<span class="dot m">🏃</span><div style="cursor:pointer">${(r.dist / 1000).toFixed(2)} km · ${hms(r.ms)}<small>${dt.toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short" })} · ${fmt(r.steps)} pasos</small></div><span class="k">${fmt(r.kcal)} kcal</span><button class="x" aria-label="Borrar recorrido">✕</button>`;
+    li.children[1].onclick = () => { $("histMap").hidden = false; drawRoute($("histMap"), r.pts, false); };
+    const x = li.children[3];
+    x.onclick = () => { if (x.dataset.sure) { runs.splice(i, 1); put("runs", runs); renderHist(); renderDay(); } else { x.dataset.sure = 1; x.textContent = "¿Borrar?"; x.style.color = "var(--bad)"; } };
+    ul.append(li);
+  });
+}
+
+// ---------- PERFIL ----------
+function renderProfile() {
+  for (const k of ["weight", "height", "age", "sex", "act", "goal"]) if (profile[k] != null) $(k).value = profile[k];
+  const r = calc(profile); $("results").hidden = !r; if (!r) return;
+  $("bmi").textContent = r.bmi; $("tdee").textContent = fmt(r.tdee); $("goalK").textContent = fmt(r.target);
+  $("bmiCat").innerHTML = `<span class="pill" style="background:var(${r.cat[1]})">${r.cat[0]}</span> según tu IMC.`;
+}
+$("saveProfile").onclick = () => {
+  const p = {}; for (const k of ["weight", "height", "age", "sex", "act", "goal"]) p[k] = $(k).value;
+  if (!(+p.weight > 20 && +p.weight < 400 && +p.height > 100 && +p.height < 250 && +p.age >= 12 && +p.age < 110)) {
+    $("profileMsg").className = "msg err"; $("profileMsg").textContent = "Revisa peso (kg), altura (cm) y edad."; return; }
+  profile = p; put("profile", p);
+  const ws = get("weights", []), d = dkey(); // un registro de peso por día
+  if (ws.at(-1)?.[0] === d) ws.at(-1)[1] = +p.weight; else ws.push([d, +p.weight]);
+  put("weights", ws);
+  $("profileMsg").className = "msg"; $("profileMsg").textContent = "Guardado.";
+  renderProfile(); renderDay(); renderHist();
+};
+
+// ---------- navegación, instalación, offline ----------
+document.querySelectorAll(".tabbar button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabbar button").forEach(x => x.setAttribute("aria-selected", x === b));
+  for (const t of ["hoy", "correr", "historial", "perfil"]) $("tab-" + t).hidden = t !== b.dataset.tab;
+  if (b.dataset.tab === "correr") renderRun(); scrollTo(0, 0);
+});
+let installEvt = null;
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; $("install").hidden = false; });
+$("install").onclick = async () => { installEvt?.prompt(); await installEvt?.userChoice; $("install").hidden = true; };
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js");
+
+$("today").textContent = new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+renderDay(); renderRun(); renderHist(); renderProfile();
+if (run) { gpsTxt("Recorrido en pausa: dale Seguir o Terminar"); document.querySelector('[data-tab="correr"]').click(); }
+</script>
+</body>
+</html>
